@@ -2,7 +2,8 @@
 import streamlit as st
 import requests
 import pandas as pd
-import datetime
+import numpy as np
+from datetime import datetime
 
 @st.cache_data(ttl="1day")
 
@@ -31,17 +32,78 @@ def coleta_tesouro():
 
         })
 
+    # ultima_att = [x['opngDtTm'] for x in data['response']["TrsrBondMkt"]]
+    
     # Criando um DataFrame
     df = pd.DataFrame(titulos)
 
     # Definindo Vencimento como coluna de data
     df['Vencimento'] = pd.to_datetime(df['Vencimento']).dt.date
+    today = datetime.today().date()
+    df['anos'] = (df['Vencimento']- today).apply(lambda x: int(x.days/365))
+    df['dias_ate_vencimento'] = (df['Vencimento']- today)
    
     return df
 
+# %%
 
-def opcao_titulo(df: pd.DataFrame, tempo):
-    return tempo
+df = coleta_tesouro()
+df.head()
+# %%
+
+
+def opcao_titulo(df: pd.DataFrame, tempo: int):
+    df = df
+
+    if tempo < 3:
+        df_filtrado = df[df['anos'] < 3]
+
+    elif tempo > 2 and tempo < 6:
+        df_filtrado = df[(df['anos'] > 2) & (df['anos'] < 6)]
+    
+    else:
+        df_filtrado = df[df['anos'] > 5]
+        
+    
+    return df_filtrado
+
+#opcao_titulo(df, 3)
+
+# %%
+def prefixado(valor_inicial, taxa, tempo):
+    taxa = taxa/100
+    valor_final = valor_inicial*(1+taxa)**(tempo/365)
+
+    return round(valor_final,2)
+
+def ipca(valor_inicial, taxa, tempo):
+    taxa = taxa/100
+    ipca = requests.get("https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/12?formato=json")
+    ipca_data = ipca.json()
+    ipca_12m = float(ipca_data[-1]['valor'].replace(',','.')) / 100
+
+    ipca_taxa = (1 + ipca_12m)*(1 + taxa) - 1
+    valor_final = valor_inicial * (1 + ipca_taxa)**(tempo/365) 
+    return round(valor_final,2)
+
+def selic(valor_inicial, taxa, tempo):
+    taxa = taxa / 100
+    selic = requests.get("https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/1?formato=json")
+    selic_data = pd.DataFrame(selic.json())
+    taxa_selic = float(selic_data['valor'].iloc[0]) / 100
+
+    selic_dia = (1 + taxa_selic + taxa)**(1/365) - 1
+    valor_final = valor_inicial * (1 + selic_dia)**tempo
+    
+    return round(valor_final,2)
+
+
+# %%
+print(prefixado(1000, 13.51,951))
+print(ipca(1000, 7.8800, 951))
+print(selic(1000,0.0508, 951 ))
+
+# %%
 
 st.set_page_config(page_title="Planejador", page_icon="💰")
 
@@ -69,36 +131,17 @@ tempo = col2.number_input("Tempo do investimento?", min_value=0)
 if st.button("Pesquisar"):
     df = coleta_tesouro()
 
-    st.write(df)
+    #st.write(df)
 
     if (objetivo == 'Curto (até 2 anos)'):
-        st.write(opcao_titulo(df, tempo))
+        st.write(opcao_titulo(df, 2))
         
     elif (objetivo == 'Médio (3 - 5 anos)'):
-        st.write(opcao_titulo(df, tempo))
+        st.write(opcao_titulo(df, 5))
 
-    else:
-        st.write(opcao_titulo(df, tempo))
+    elif (objetivo == 'Longo (5+ anos)'):
+        st.write(opcao_titulo(df, 6))
 
     st.button("Reset", type='primary')
-
-
-
-
-# definindo data de hoje
-hoje = datetime.datetime.today().date()
-
-
-#(datetime.datetime.today().date() -df['Vencimento']) <= 2 -> calcular data
-#df['Vencimento']- hoje).apply(lambda x: x.days/365).round(0)
-
-# if (tempo <= 2):
-#     opcao_curto()
-
-# elif (tempo > 2 and tempo <= 5):
-#     opcao_medio()
-
-# else:
-#     opcao_longo()
 
 
