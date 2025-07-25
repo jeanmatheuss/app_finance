@@ -1,4 +1,3 @@
-# %%
 import streamlit as st
 import requests
 import pandas as pd
@@ -45,9 +44,6 @@ def coleta_tesouro():
    
     return df
 
-# %%
-
-
 def opcao_titulo(df: pd.DataFrame, tempo: int):
     df = df
 
@@ -63,40 +59,6 @@ def opcao_titulo(df: pd.DataFrame, tempo: int):
     
     return df_filtrado
 
-#opcao_titulo(df, 3)
-
-# %%
-def prefixado(valor_inicial, taxa, tempo):
-    taxa = taxa/100
-    valor_final = valor_inicial*(1+taxa)**(tempo/365)
-
-    return round(valor_final,2)
-
-def ipca(valor_inicial, taxa, tempo):
-    taxa = taxa/100
-    ipca = requests.get("https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/12?formato=json")
-    ipca_data = ipca.json()
-    ipca_12m = float(ipca_data[-1]['valor'].replace(',','.')) / 100
-
-    ipca_taxa = (1 + ipca_12m)*(1 + taxa) - 1
-    valor_final = valor_inicial * (1 + ipca_taxa)**(tempo/365) 
-    return round(valor_final,2)
-
-def selic(valor_inicial, taxa, tempo):
-    taxa = taxa / 100
-    selic = requests.get("https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/1?formato=json")
-    selic_data = pd.DataFrame(selic.json())
-    taxa_selic = float(selic_data['valor'].iloc[0]) / 100
-
-    selic_dia = (1 + taxa_selic + taxa)**(1/365) - 1
-    valor_final = valor_inicial * (1 + selic_dia)**tempo
-    print(taxa_selic)
-    
-    return round(valor_final,2)
-
-
-
-# %%
 
 st.set_page_config(page_title="Planejador", page_icon="💰")
 
@@ -128,12 +90,15 @@ if st.button("Pesquisar"):
 
     if (objetivo == 'Curto (até 2 anos)'):
         st.write(opcao_titulo(df, 2))
+        st.success("Pesquisa realizada com sucesso!")
         
     elif (objetivo == 'Médio (3 - 5 anos)'):
         st.write(opcao_titulo(df, 5))
+        st.success("Pesquisa realizada com sucesso!")
 
     elif (objetivo == 'Longo (5+ anos)'):
         st.write(opcao_titulo(df, 6))
+        st.success(f"Pesquisa realizada com sucesso!")
 
     st.button("Reset", type='primary')
 
