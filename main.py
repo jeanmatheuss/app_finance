@@ -47,10 +47,6 @@ def coleta_tesouro():
 
 # %%
 
-df = coleta_tesouro()
-df.head()
-# %%
-
 
 def opcao_titulo(df: pd.DataFrame, tempo: int):
     df = df
@@ -94,14 +90,11 @@ def selic(valor_inicial, taxa, tempo):
 
     selic_dia = (1 + taxa_selic + taxa)**(1/365) - 1
     valor_final = valor_inicial * (1 + selic_dia)**tempo
+    print(taxa_selic)
     
     return round(valor_final,2)
 
 
-# %%
-print(prefixado(1000, 13.51,951))
-print(ipca(1000, 7.8800, 951))
-print(selic(1000,0.0508, 951 ))
 
 # %%
 
